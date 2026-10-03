@@ -12,7 +12,18 @@
   </head>
 
   <body>
-    <div id="unity-container" class="unity-desktop">
+    <div id="study-intro" class="study-intro" dir="rtl">
+      <div class="study-intro-card">
+        <h1>مطالعه انتخاب محل پارک</h1>
+        <p>
+          تکمیل این مطالعه حدود <strong>۱۵ تا ۲۰ دقیقه</strong> زمان می‌برد.
+          لطفاً پیش از شروع، زمانی را انتخاب کنید که بتوانید بدون وقفه مطالعه را تا پایان ادامه دهید.
+        </p>
+        <button id="study-start-button" type="button">ورود به مطالعه</button>
+      </div>
+    </div>
+
+    <div id="unity-container" class="unity-desktop" aria-hidden="true">
       <canvas id="unity-canvas" width="960" height="540" tabindex="-1"></canvas>
 
       <div id="unity-loading-bar">
@@ -72,13 +83,13 @@
       }
 
       const buildUrl = "Build";
-      const loaderUrl = buildUrl + "/Build_2.0.0_WebGL.loader.js";
+      const loaderUrl = buildUrl + "/Build_2.0.1_WebGL.loader.js";
 
       const config = {
         arguments: [],
-        dataUrl: buildUrl + "/Build_2.0.0_WebGL.data.unityweb",
-        frameworkUrl: buildUrl + "/Build_2.0.0_WebGL.framework.js.unityweb",
-        codeUrl: buildUrl + "/Build_2.0.0_WebGL.wasm.unityweb",
+        dataUrl: buildUrl + "/Build_2.0.1_WebGL.data.unityweb",
+        frameworkUrl: buildUrl + "/Build_2.0.1_WebGL.framework.js.unityweb",
+        codeUrl: buildUrl + "/Build_2.0.1_WebGL.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "GamifiedParkingSurvey",
@@ -200,36 +211,60 @@
         window.visualViewport.addEventListener("resize", resizeUnityPlayer);
       }
 
-      document.querySelector("#unity-loading-bar").style.display = "block";
+      let unityStarted = false;
 
-      const script = document.createElement("script");
-      script.src = loaderUrl;
+      function startUnityStudy() {
+        if (unityStarted) return;
+        unityStarted = true;
 
-      script.onload = function () {
-        createUnityInstance(canvas, config, function (progress) {
-          document.querySelector("#unity-progress-bar-full").style.width =
-            (100 * progress) + "%";
-        }).then(function (unityInstance) {
-          document.querySelector("#unity-loading-bar").style.display = "none";
+        const intro = document.querySelector("#study-intro");
+        const startButton = document.querySelector("#study-start-button");
 
-          // Unity can touch the canvas dimensions during startup, so re-apply
-          // the fixed 16:9 rule after initialization.
-          requestAnimationFrame(resizeUnityPlayer);
-          setTimeout(resizeUnityPlayer, 100);
-          setTimeout(resizeUnityPlayer, 500);
+        startButton.disabled = true;
+        intro.classList.add("study-intro-hidden");
+        unityContainer.setAttribute("aria-hidden", "false");
 
-          document.querySelector("#unity-fullscreen-button").onclick =
-            function () {
-              unityInstance.SetFullscreen(1);
-              setTimeout(resizeUnityPlayer, 100);
-              setTimeout(resizeUnityPlayer, 500);
-            };
-        }).catch(function (message) {
-          alert(message);
-        });
-      };
+        resizeUnityPlayer();
+        document.querySelector("#unity-loading-bar").style.display = "block";
 
-      document.body.appendChild(script);
+        const script = document.createElement("script");
+        script.src = loaderUrl;
+
+        script.onload = function () {
+          createUnityInstance(canvas, config, function (progress) {
+            document.querySelector("#unity-progress-bar-full").style.width =
+              (100 * progress) + "%";
+          }).then(function (unityInstance) {
+            document.querySelector("#unity-loading-bar").style.display = "none";
+
+            // Unity can touch the canvas dimensions during startup, so re-apply
+            // the fixed 16:9 rule after initialization.
+            requestAnimationFrame(resizeUnityPlayer);
+            setTimeout(resizeUnityPlayer, 100);
+            setTimeout(resizeUnityPlayer, 500);
+
+            document.querySelector("#unity-fullscreen-button").onclick =
+              function () {
+                unityInstance.SetFullscreen(1);
+                setTimeout(resizeUnityPlayer, 100);
+                setTimeout(resizeUnityPlayer, 500);
+              };
+          }).catch(function (message) {
+            alert(message);
+          });
+        };
+
+        script.onerror = function () {
+          alert("خطا در بارگذاری مطالعه. لطفاً صفحه را دوباره بارگذاری کنید.");
+        };
+
+        document.body.appendChild(script);
+      }
+
+      document.querySelector("#study-start-button").addEventListener(
+        "click",
+        startUnityStudy
+      );
     </script>
   </body>
 </html>

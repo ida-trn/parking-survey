@@ -133,3 +133,94 @@ body {
   background: #fdd835;
   color: black;
 }
+
+
+/* Pre-study information screen */
+.study-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 24px;
+  background: #111111;
+  font-family: Tahoma, Arial, sans-serif;
+}
+
+.study-intro-card {
+  width: min(620px, 100%);
+  box-sizing: border-box;
+  padding: 30px 32px;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #222222;
+  text-align: right;
+  line-height: 2;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+}
+
+.study-intro-card h1 {
+  margin: 0 0 14px;
+  font-size: 24px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.study-intro-card p {
+  margin: 0;
+  font-size: 17px;
+}
+
+#study-start-button {
+  display: block;
+  min-width: 180px;
+  margin: 24px auto 0;
+  padding: 12px 24px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #2f6fed;
+  color: #ffffff;
+  font-family: Tahoma, Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+#study-start-button:hover {
+  filter: brightness(1.08);
+}
+
+#study-start-button:focus-visible {
+  outline: 3px solid rgba(47, 111, 237, 0.35);
+  outline-offset: 3px;
+}
+
+#study-start-button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.study-intro-hidden {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .study-intro {
+    padding: 16px;
+  }
+
+  .study-intro-card {
+    padding: 24px 20px;
+    border-radius: 14px;
+  }
+
+  .study-intro-card h1 {
+    font-size: 21px;
+  }
+
+  .study-intro-card p {
+    font-size: 16px;
+  }
+}
