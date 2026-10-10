@@ -205,70 +205,6 @@ body {
   display: none;
 }
 
-
-.prize-draw-section {
-  margin-top: 22px;
-}
-
-.prize-draw-section label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.8;
-}
-
-#prize-phone {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 11px 14px;
-  border: 1px solid #cfd5df;
-  border-radius: 9px;
-  background: #ffffff;
-  color: #222222;
-  font-family: Arial, Tahoma, sans-serif;
-  font-size: 17px;
-  text-align: left;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-#prize-phone::placeholder {
-  color: #8a9099;
-}
-
-#prize-phone:focus {
-  border-color: #2f6fed;
-  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.14);
-}
-
-#prize-phone.input-invalid {
-  border-color: #c62828;
-  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.10);
-}
-
-.prize-phone-error {
-  min-height: 22px;
-  margin-top: 4px;
-  color: #b3261e;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.prize-draw-note {
-  margin-top: 6px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: #f4f7ff;
-  color: #343b4a;
-  font-size: 14px;
-  line-height: 1.9;
-}
-
-.prize-draw-note strong {
-  color: #1f4fbf;
-}
-
 @media (max-width: 640px) {
   .study-intro {
     padding: 16px;
@@ -285,22 +221,6 @@ body {
 
   .study-intro-card p {
     font-size: 16px;
-  }
-
-  .prize-draw-section {
-    margin-top: 18px;
-  }
-
-  .prize-draw-section label {
-    font-size: 15px;
-  }
-
-  #prize-phone {
-    font-size: 16px;
-  }
-
-  .prize-draw-note {
-    font-size: 13px;
   }
 }
 

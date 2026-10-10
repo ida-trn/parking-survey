@@ -18,34 +18,6 @@
         <p>
           تکمیل این مطالعه حدودا 10 دقیقه زمان می‌برد. لطفاً پیش از شروع، زمانی را انتخاب کنید که بتوانید بدون وقفه مطالعه را تا پایان ادامه دهید.
         </p>
-
-        <div class="prize-draw-section">
-          <label for="prize-phone">
-            شماره تماس برای شرکت در قرعه‌کشی (اختیاری)
-          </label>
-
-          <input
-            id="prize-phone"
-            type="tel"
-            inputmode="numeric"
-            autocomplete="tel"
-            dir="ltr"
-            maxlength="11"
-            placeholder="09xxxxxxxxx"
-            aria-describedby="prize-draw-note prize-phone-error"
-          >
-
-          <div id="prize-phone-error" class="prize-phone-error" role="alert" aria-live="polite"></div>
-
-          <div id="prize-draw-note" class="prize-draw-note">
-            <strong>۳ جایزه یک‌میلیون‌تومانی</strong> میان افرادی که مطالعه را
-            <strong>به‌طور کامل تا انتها انجام دهند</strong> قرعه‌کشی خواهد شد.
-            تنها در صورت تکمیل کامل مطالعه، شما وارد قرعه‌کشی می‌شوید.
-            وارد کردن شماره تماس کاملاً اختیاری است و شماره شما فقط برای
-            قرعه‌کشی و تماس با برندگان استفاده خواهد شد.
-          </div>
-        </div>
-
         <button id="study-start-button" type="button">ورود به مطالعه</button>
       </div>
     </div>
@@ -76,58 +48,7 @@
       const canvas = document.querySelector("#unity-canvas");
       const unityContainer = document.querySelector("#unity-container");
       const unityFooter = document.querySelector("#unity-footer");
-      const prizePhoneInput = document.querySelector("#prize-phone");
-      const prizePhoneError = document.querySelector("#prize-phone-error");
       const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      function normalizePhoneDigits(value) {
-        const persianDigits = "۰۱۲۳۴۵۶۷۸۹";
-        const arabicDigits = "٠١٢٣٤٥٦٧٨٩";
-
-        return String(value || "")
-          .trim()
-          .replace(/[۰-۹]/g, function (digit) {
-            return String(persianDigits.indexOf(digit));
-          })
-          .replace(/[٠-٩]/g, function (digit) {
-            return String(arabicDigits.indexOf(digit));
-          })
-          .replace(/[\s\-()]/g, "");
-      }
-
-      function validatePrizePhone() {
-        const normalized = normalizePhoneDigits(prizePhoneInput.value);
-
-        // The field is optional.
-        if (!normalized) {
-          prizePhoneError.textContent = "";
-          prizePhoneInput.classList.remove("input-invalid");
-          window.prizeDrawPhoneNumber = "";
-          return true;
-        }
-
-        if (!/^09\d{9}$/.test(normalized)) {
-          prizePhoneError.textContent =
-            "لطفاً شماره موبایل را به‌صورت 11 رقمی و با 09 وارد کنید.";
-          prizePhoneInput.classList.add("input-invalid");
-          return false;
-        }
-
-        prizePhoneError.textContent = "";
-        prizePhoneInput.classList.remove("input-invalid");
-        prizePhoneInput.value = normalized;
-
-        // Kept only in the current page session. It is not written to
-        // localStorage, cookies, or Supabase from this HTML file.
-        window.prizeDrawPhoneNumber = normalized;
-        return true;
-      }
-
-      prizePhoneInput.addEventListener("input", function () {
-        if (prizePhoneError.textContent) {
-          validatePrizePhone();
-        }
-      });
 
       function unityShowBanner(msg, type) {
         const warningBanner = document.querySelector("#unity-warning");
@@ -292,12 +213,6 @@
 
       function startUnityStudy() {
         if (unityStarted) return;
-
-        if (!validatePrizePhone()) {
-          prizePhoneInput.focus();
-          return;
-        }
-
         unityStarted = true;
 
         const intro = document.querySelector("#study-intro");
