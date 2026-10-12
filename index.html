@@ -12,16 +12,41 @@
   </head>
 
   <body>
-    <div id="study-intro" class="study-intro" dir="rtl">
-      <div class="study-intro-card">
-        <h1>مطالعه انتخاب محل پارک</h1>
-        <p>
-          تکمیل این مطالعه حدودا 10 دقیقه زمان می‌برد. لطفاً پیش از شروع، زمانی را انتخاب کنید که بتوانید بدون وقفه مطالعه را تا پایان ادامه دهید.
+    <!-- Optional prize-draw contact: shown before Unity downloads or starts. -->
+    <main id="prize-draw-gate" lang="fa" dir="rtl" aria-labelledby="prize-draw-title">
+      <section id="prize-draw-card">
+        <div class="prize-draw-eyebrow">پژوهش انتخاب محل پارک حاشیه‌ای</div>
+        <h1 id="prize-draw-title">پیش از شروع نظرسنجی</h1>
+        <p id="prize-draw-description">
+          شماره تماس برای شرکت در قرعه‌کشی (اختیاری)
         </p>
-        <button id="study-start-button" type="button">ورود به مطالعه</button>
-      </div>
-    </div>
-    <div id="unity-container" class="unity-desktop" aria-hidden="true">
+        <p class="prize-draw-prizes">۳ جایزه یک‌میلیون تومانی</p>
+        <p class="prize-draw-note">
+          تنها در صورت تکمیل کامل نظرسنجی، شماره شما واجد شرایط شرکت در قرعه‌کشی خواهد بود.
+          وارد کردن شماره تماس الزامی نیست و می‌توانید بدون شرکت در قرعه‌کشی، نظرسنجی را انجام دهید.
+        </p>
+        <form id="prize-draw-form" novalidate>
+          <label for="prize-draw-phone">شماره تلفن همراه</label>
+          <input
+            id="prize-draw-phone"
+            name="prize-draw-phone"
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+            aria-describedby="prize-draw-hint prize-draw-status"
+            maxlength="20"
+            dir="ltr"
+          >
+          <div id="prize-draw-hint">در صورت تمایل به قرعه‌کشی، شماره موبایل ایرانی خود را وارد کنید.</div>
+          <div id="prize-draw-status" role="status" aria-live="polite"></div>
+          <button id="prize-draw-start" type="submit">شروع نظرسنجی</button>
+          <button id="prize-draw-skip" type="button">ادامه بدون شرکت در قرعه‌کشی</button>
+        </form>
+      </section>
+    </main>
+
+    <div id="unity-container" class="unity-desktop">
       <canvas id="unity-canvas" width="960" height="540" tabindex="-1"></canvas>
 
       <div id="unity-loading-bar">
@@ -49,6 +74,199 @@
       const unityContainer = document.querySelector("#unity-container");
       const unityFooter = document.querySelector("#unity-footer");
       const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      // Optional pre-survey phone collection. Nothing is stored in localStorage.
+      // Supabase stores the number immediately; the Unity session is linked later
+      // using the stable participant/session IDs supplied by ParkingLogger.
+      const PRIZE_DRAW_SUPABASE_URL = "https://fpmkelgfkfwmqzdmvpqh.supabase.co";
+      const PRIZE_DRAW_PUBLISHABLE_KEY = "sb_publishable_rXyBieI9cMyvo1zyycSAGw_EpDtZOMU";
+      const PRIZE_DRAW_BUILD_VERSION = "2.0.3-balanced-blocks";
+      const prizeDrawGate = document.querySelector("#prize-draw-gate");
+      const prizeDrawForm = document.querySelector("#prize-draw-form");
+      const prizeDrawPhone = document.querySelector("#prize-draw-phone");
+      const prizeDrawStatus = document.querySelector("#prize-draw-status");
+      const prizeDrawStart = document.querySelector("#prize-draw-start");
+      const prizeDrawSkip = document.querySelector("#prize-draw-skip");
+
+      let prizeDrawToken = null;
+      let prizeDrawSession = null;
+      let prizeDrawLinkComplete = false;
+      let prizeDrawLinkInFlight = false;
+      let prizeDrawRetryTimer = null;
+      let prizeDrawRetryCount = 0;
+      let phoneRegistrationInProgress = false;
+      let unityBootStarted = false;
+
+      function normalizeIranianPhone(value) {
+        const englishDigits = String(value || "")
+          .replace(/[۰-۹]/g, ch => String(ch.charCodeAt(0) - 0x06F0))
+          .replace(/[٠-٩]/g, ch => String(ch.charCodeAt(0) - 0x0660));
+        let number = englishDigits.replace(/[\s()\-]/g, "");
+        if (number.startsWith("+98")) number = "0" + number.slice(3);
+        else if (number.startsWith("0098")) number = "0" + number.slice(4);
+        else if (/^9\d{9}$/.test(number)) number = "0" + number;
+        return number;
+      }
+
+      function createPrizeDrawToken() {
+        // GitHub Pages runs on HTTPS, so crypto.getRandomValues is available.
+        if (!window.crypto || !window.crypto.getRandomValues) {
+          throw new Error("Secure random generator unavailable");
+        }
+        const bytes = new Uint8Array(16);
+        window.crypto.getRandomValues(bytes);
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+        return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+      }
+
+      async function prizeDrawRpc(functionName, body) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+        try {
+          const response = await fetch(
+            `${PRIZE_DRAW_SUPABASE_URL}/rest/v1/rpc/${functionName}`,
+            {
+              method: "POST",
+              mode: "cors",
+              cache: "no-store",
+              signal: controller.signal,
+              headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "apikey": PRIZE_DRAW_PUBLISHABLE_KEY
+              },
+              body: JSON.stringify(body)
+            }
+          );
+          if (!response.ok) throw new Error(`Prize draw RPC: HTTP ${response.status}`);
+          const result = await response.json();
+          return result === true || result === "true";
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
+
+      function schedulePrizeDrawLink(delayMs) {
+        if (prizeDrawRetryTimer !== null || prizeDrawLinkComplete ||
+            !prizeDrawToken || !prizeDrawSession) return;
+        prizeDrawRetryTimer = setTimeout(function () {
+          prizeDrawRetryTimer = null;
+          void attemptPrizeDrawLink();
+        }, delayMs);
+      }
+
+      async function attemptPrizeDrawLink() {
+        if (!prizeDrawToken || !prizeDrawSession || prizeDrawLinkComplete || prizeDrawLinkInFlight) {
+          return;
+        }
+        prizeDrawLinkInFlight = true;
+        try {
+          const linked = await prizeDrawRpc("prize_draw_link_session", {
+            p_entry_token: prizeDrawToken,
+            p_session_id: prizeDrawSession.sessionId,
+            p_participant_id: prizeDrawSession.participantId,
+            p_build_version: prizeDrawSession.buildVersion
+          });
+          if (linked) {
+            prizeDrawLinkComplete = true;
+            console.info("[PrizeDraw] Optional contact linked to Unity session.");
+          }
+        } catch (error) {
+          // Network errors do not interrupt survey participation.
+          console.warn("[PrizeDraw] Session link will retry.");
+        } finally {
+          prizeDrawLinkInFlight = false;
+          if (!prizeDrawLinkComplete) {
+            prizeDrawRetryCount++;
+            // Wait for Unity's asynchronous session_start upload to reach Supabase.
+            const backoffMs = Math.min(30000, 1500 * Math.pow(1.5, Math.min(prizeDrawRetryCount, 8)));
+            schedulePrizeDrawLink(backoffMs);
+          }
+        }
+      }
+
+      // Invoked from Assets/Plugins/WebGL/PrizeDrawBridge.jslib.
+      window.PrizeDrawLinkUnitySession = function (sessionId, participantId, buildVersion) {
+        if (!prizeDrawToken || prizeDrawLinkComplete) return;
+        if (buildVersion !== PRIZE_DRAW_BUILD_VERSION) {
+          console.warn("[PrizeDraw] Ignoring mismatched build version.");
+          return;
+        }
+        if (!sessionId || !participantId) return;
+        prizeDrawSession = {
+          sessionId: String(sessionId),
+          participantId: String(participantId),
+          buildVersion: String(buildVersion)
+        };
+        // Restart promptly when Unity sends the end-session callback.
+        if (prizeDrawRetryTimer !== null) {
+          clearTimeout(prizeDrawRetryTimer);
+          prizeDrawRetryTimer = null;
+        }
+        schedulePrizeDrawLink(0);
+      };
+
+      function setPrizeDrawStatus(message, isError) {
+        prizeDrawStatus.textContent = message;
+        prizeDrawStatus.classList.toggle("is-error", Boolean(isError));
+      }
+
+      function setPrizeDrawBusy(busy) {
+        phoneRegistrationInProgress = busy;
+        prizeDrawStart.disabled = busy;
+        prizeDrawSkip.disabled = busy;
+        prizeDrawPhone.disabled = busy;
+      }
+
+      async function registerPhoneAndBegin(event) {
+        event.preventDefault();
+        if (phoneRegistrationInProgress || unityBootStarted) return;
+        const number = normalizeIranianPhone(prizeDrawPhone.value);
+        if (!number) {
+          launchUnitySurvey();
+          return;
+        }
+        if (!/^09\d{9}$/.test(number)) {
+          setPrizeDrawStatus("لطفاً شماره موبایل معتبر (مانند ۰۹۱۲۳۴۵۶۷۸۹) وارد کنید.", true);
+          prizeDrawPhone.focus();
+          return;
+        }
+
+        setPrizeDrawBusy(true);
+        setPrizeDrawStatus("در حال ثبت شماره تماس...", false);
+        try {
+          // Generate a fresh token for each registration attempt.
+          const token = createPrizeDrawToken();
+          const saved = await prizeDrawRpc("prize_draw_register", {
+            p_entry_token: token,
+            p_phone_number: number
+          });
+          if (!saved) throw new Error("Registration returned false");
+          prizeDrawToken = token;
+          launchUnitySurvey();
+        } catch (error) {
+          setPrizeDrawStatus(
+            "ثبت شماره انجام نشد. لطفاً دوباره تلاش کنید یا بدون شماره ادامه دهید.",
+            true
+          );
+        } finally {
+          setPrizeDrawBusy(false);
+        }
+      }
+
+      prizeDrawPhone.addEventListener("input", function () {
+        if (prizeDrawStatus.textContent) setPrizeDrawStatus("", false);
+      });
+      prizeDrawForm.addEventListener("submit", registerPhoneAndBegin);
+      prizeDrawSkip.addEventListener("click", function () {
+        if (!phoneRegistrationInProgress) {
+          prizeDrawToken = null;
+          launchUnitySurvey();
+        }
+      });
+
 
       function unityShowBanner(msg, type) {
         const warningBanner = document.querySelector("#unity-warning");
@@ -81,13 +299,13 @@
       }
 
       const buildUrl = "Build";
-      const loaderUrl = buildUrl + "/Build_2.0.2_WebGL.loader.js";
+      const loaderUrl = buildUrl + "/Build_2.0.3_WebGL.loader.js";
 
       const config = {
         arguments: [],
-        dataUrl: buildUrl + "/Build_2.0.2_WebGL.data.unityweb",
-        frameworkUrl: buildUrl + "/Build_2.0.2_WebGL.framework.js.unityweb",
-        codeUrl: buildUrl + "/Build_2.0.2_WebGL.wasm.unityweb",
+        dataUrl: buildUrl + "/Build_2.0.3_WebGL.data.unityweb",
+        frameworkUrl: buildUrl + "/Build_2.0.3_WebGL.framework.js.unityweb",
+        codeUrl: buildUrl + "/Build_2.0.3_WebGL.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "GamifiedParkingSurvey",
@@ -209,20 +427,11 @@
         window.visualViewport.addEventListener("resize", resizeUnityPlayer);
       }
 
-      let unityStarted = false;
-
-      function startUnityStudy() {
-        if (unityStarted) return;
-        unityStarted = true;
-
-        const intro = document.querySelector("#study-intro");
-        const startButton = document.querySelector("#study-start-button");
-
-        startButton.disabled = true;
-        intro.classList.add("study-intro-hidden");
-        unityContainer.setAttribute("aria-hidden", "false");
-
-        resizeUnityPlayer();
+      function launchUnitySurvey() {
+        if (unityBootStarted) return;
+        unityBootStarted = true;
+        prizeDrawPhone.value = ""; // Never retain an optional phone in the page/UI.
+        prizeDrawGate.hidden = true;
         document.querySelector("#unity-loading-bar").style.display = "block";
 
         const script = document.createElement("script");
@@ -235,8 +444,7 @@
           }).then(function (unityInstance) {
             document.querySelector("#unity-loading-bar").style.display = "none";
 
-            // Unity can touch the canvas dimensions during startup, so re-apply
-            // the fixed 16:9 rule after initialization.
+            // Preserve the existing fixed 16:9 layout on all devices.
             requestAnimationFrame(resizeUnityPlayer);
             setTimeout(resizeUnityPlayer, 100);
             setTimeout(resizeUnityPlayer, 500);
@@ -253,16 +461,11 @@
         };
 
         script.onerror = function () {
-          alert("خطا در بارگذاری مطالعه. لطفاً صفحه را دوباره بارگذاری کنید.");
+          unityShowBanner("Unity loader could not be downloaded. Please refresh and try again.", "error");
         };
 
         document.body.appendChild(script);
       }
-
-      document.querySelector("#study-start-button").addEventListener(
-        "click",
-        startUnityStudy
-      );
     </script>
   </body>
 </html>

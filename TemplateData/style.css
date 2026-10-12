@@ -134,93 +134,159 @@ body {
   color: black;
 }
 
-/* Pre-study information screen */
-.study-intro {
+/* Optional prize draw contact form. Does not change the Unity 16:9 layout. */
+#prize-draw-gate[hidden] {
+  display: none !important;
+}
+
+#prize-draw-gate {
   position: fixed;
   inset: 0;
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow-y: auto;
   box-sizing: border-box;
-  padding: 24px;
-  background: #111111;
-  font-family: Tahoma, Arial, sans-serif;
+  padding: 22px 14px;
+  background: #101723;
+  color: #172132;
+  font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+  direction: rtl;
 }
 
-.study-intro-card {
-  width: min(620px, 100%);
+#prize-draw-card {
+  width: min(100%, 520px);
+  max-height: 100%;
+  overflow-y: auto;
   box-sizing: border-box;
-  padding: 30px 32px;
+  padding: clamp(22px, 4vw, 38px);
   border-radius: 16px;
-  background: #ffffff;
-  color: #222222;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.27);
   text-align: right;
-  line-height: 2;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+  line-height: 1.9;
 }
 
-.study-intro-card h1 {
-  margin: 0 0 14px;
-  font-size: 24px;
+.prize-draw-eyebrow {
+  color: #526578;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+#prize-draw-title {
+  font-size: clamp(21px, 4.3vw, 27px);
+  margin: 0 0 12px;
   line-height: 1.6;
-  text-align: center;
 }
 
-.study-intro-card p {
-  margin: 0;
+#prize-draw-description {
   font-size: 17px;
+  font-weight: bold;
+  margin: 0 0 7px;
 }
 
-#study-start-button {
+.prize-draw-prizes {
+  margin: 0 0 9px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #19567a;
+}
+
+.prize-draw-note {
+  margin: 0 0 18px;
+  color: #4a596b;
+  font-size: 13px;
+}
+
+#prize-draw-form label {
   display: block;
-  min-width: 180px;
-  margin: 24px auto 0;
-  padding: 12px 24px;
-  border: 0;
-  border-radius: 10px;
-  cursor: pointer;
-  background: #2f6fed;
-  color: #ffffff;
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#prize-draw-phone {
+  display: block;
+  width: 100%;
+  height: 52px;
+  box-sizing: border-box;
+  padding: 0 15px;
+  border: 1px solid #adbac7;
+  border-radius: 9px;
+  background: #fff;
+  color: #1a2635;
+  font-size: 19px;
   font-family: Tahoma, Arial, sans-serif;
-  font-size: 17px;
-  font-weight: 700;
+  text-align: left;
+  outline-offset: 2px;
 }
 
-#study-start-button:hover {
-  filter: brightness(1.08);
+#prize-draw-phone:focus-visible {
+  outline: 2px solid #2172ad;
+  border-color: #2172ad;
 }
 
-#study-start-button:focus-visible {
-  outline: 3px solid rgba(47, 111, 237, 0.35);
-  outline-offset: 3px;
+#prize-draw-hint {
+  margin-top: 6px;
+  color: #687787;
+  font-size: 12px;
 }
 
-#study-start-button:disabled {
-  cursor: default;
-  opacity: 0.7;
+#prize-draw-status {
+  min-height: 24px;
+  margin-top: 6px;
+  color: #165d41;
+  font-size: 13px;
 }
 
-.study-intro-hidden {
-  display: none;
+#prize-draw-status.is-error {
+  color: #b1272d;
 }
 
-@media (max-width: 640px) {
-  .study-intro {
-    padding: 16px;
-  }
-
-  .study-intro-card {
-    padding: 24px 20px;
-    border-radius: 14px;
-  }
-
-  .study-intro-card h1 {
-    font-size: 21px;
-  }
-
-  .study-intro-card p {
-    font-size: 16px;
-  }
+#prize-draw-start,
+#prize-draw-skip {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color .15s ease;
 }
 
+#prize-draw-start {
+  margin-top: 10px;
+  border: 1px solid #18638f;
+  background: #18638f;
+  color: #fff;
+}
+
+#prize-draw-start:hover:not(:disabled) {
+  background: #115479;
+}
+
+#prize-draw-skip {
+  margin-top: 10px;
+  border: 1px solid #becbd6;
+  background: #f5f8fb;
+  color: #25445d;
+}
+
+#prize-draw-skip:hover:not(:disabled) {
+  background: #e7eef5;
+}
+
+#prize-draw-start:disabled,
+#prize-draw-skip:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+@media (max-height: 650px) {
+  #prize-draw-gate { align-items: flex-start; }
+  #prize-draw-card { max-height: none; }
+}
